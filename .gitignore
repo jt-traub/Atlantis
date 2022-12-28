@@ -6,6 +6,7 @@ obj
 basic/basic
 standard/obj
 standard/standard
+standard/standard-test
 arcadia/obj
 arcadia/arcadia
 fracas/obj

@@ -23,7 +23,7 @@ jobs:
              ext: .exe
     steps:
       - uses: actions/checkout@v2
-      - run: make all-clean && make all
+      - run: make all-clean && make all && make standard-test
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}

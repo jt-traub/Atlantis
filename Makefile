@@ -25,8 +25,19 @@ ENGINE_OBJECTS = alist.o aregion.o army.o astring.o battle.o economy.o \
 OBJECTS = $(patsubst %.o,$(GAME)/obj/%.o,$(RULESET_OBJECTS)) \
   $(patsubst %.o,obj/%.o,$(ENGINE_OBJECTS)) 
 
+TESTSUITE_OBJECTS = astring.o
+
+TEST_OBJECTS = $(patsubst obj/main.o,,$(OBJECTS)) \
+  $(patsubst %.o,unit/obj/%.o,$(TESTSUITE_OBJECTS))
+
 $(GAME)-m: objdir $(OBJECTS)
+	echo $(TEST_OBJECTS)
 	$(CPLUS) $(CFLAGS) -o $(GAME)/$(GAME) $(OBJECTS)
+
+test: objdir $(TEST_OBJECTS)
+	echo "LINKING test"
+	$(CPLUS) $(CFLAGS) -o $(GAME)/$(GAME)-test $(TEST_OBJECTS) -lgtest -lgtest_main
+	$(GAME)/$(GAME)-test
 
 all: basic standard fracas kingdoms havilah neworigins
 
@@ -54,6 +65,9 @@ neworigins: FORCE
 $(GAME)/$(GAME): FORCE
 	$(MAKE) GAME=$(GAME)
 
+standard-test: FORCE
+	$(MAKE) GAME=standard test
+
 all-clean: basic-clean standard-clean fracas-clean kingdoms-clean \
 	havilah-clean neworigins-clean
 
@@ -80,10 +94,14 @@ neworigins-clean:
 
 clean:
 	rm -f $(OBJECTS)
+	rm -f $(TEST_OBJECTS)
 	if [ -d obj ]; then rmdir obj; fi
+	if [ -d unit/obj ]; then rmdir unit/obj; fi
 	if [ -d $(GAME)/obj ]; then rmdir $(GAME)/obj; fi
 	rm -f $(GAME)/html/$(GAME).html
 	rm -f $(GAME)/$(GAME)
+	rm -f $(GAME)/$(GAME)-test
+
 
 all-rules: basic-rules standard-rules fracas-rules kingdoms-rules \
 	havilah-rules neworigins-rules
@@ -118,6 +136,7 @@ FORCE:
 
 objdir:
 	if [ ! -d obj ]; then mkdir obj; fi
+	if [ ! -d unit/obj ]; then mkdir unit/obj; fi
 	if [ ! -d $(GAME)/obj ]; then mkdir $(GAME)/obj; fi
 
 
@@ -127,3 +146,5 @@ $(patsubst %.o,$(GAME)/obj/%.o,$(RULESET_OBJECTS)): $(GAME)/obj/%.o: $(GAME)/%.c
 $(patsubst %.o,obj/%.o,$(ENGINE_OBJECTS)): obj/%.o: %.cpp
 	$(CPLUS) $(CFLAGS) -c -o $@ $<
 
+$(patsubst %.o,unit/obj/%.o,$(TESTSUITE_OBJECTS)): unit/obj/%.o: unit/%.cpp
+	$(CPLUS) $(CFLAGS) -c -o $@ $<
