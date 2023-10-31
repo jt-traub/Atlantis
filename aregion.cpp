@@ -1968,7 +1968,7 @@ Unit *ARegion::ForbiddenByAlly(Unit *u)
 		Object *obj = (Object *) elem;
 		forlist ((&obj->units)) {
 			Unit *u2 = (Unit *) elem;
-			if (u->faction->GetAttitude(u2->faction->num) == A_ALLY &&
+			if (u->faction->attitudes.get_attitude_toward_faction(u2->faction->num) == Attitude::ALLY &&
 				u2->Forbids(this, u)) return u2;
 		}
 	}
@@ -2066,7 +2066,7 @@ int ARegion::CanTax(Unit *u)
 		forlist ((&obj->units)) {
 			Unit *u2 = (Unit *) elem;
 			if (u2->guard == GUARD_GUARD && u2->IsAlive())
-				if (u2->GetAttitude(this, u) <= A_NEUTRAL)
+				if (u2->GetAttitude(this, u) <= Attitude::NEUTRAL)
 					return 0;
 		}
 	}
@@ -2080,7 +2080,7 @@ int ARegion::CanGuard(Unit *u)
 		forlist ((&obj->units)) {
 			Unit *u2 = (Unit *) elem;
 			if (u2->guard == GUARD_GUARD && u2->IsAlive())
-				if (u2->GetAttitude(this, u) < A_ALLY)
+				if (u2->GetAttitude(this, u) < Attitude::ALLY)
 					return 0;
 		}
 	}

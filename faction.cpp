@@ -24,6 +24,8 @@
 // END A3HEADER
 
 #include "gamedata.h"
+#include "attitude.hpp"
+#include "enum_helpers.hpp"
 #include "game.h"
 #include "indenter.hpp"
 #include <algorithm>
@@ -31,15 +33,6 @@
 #include <iomanip>
 
 using namespace std;
-
-char const *as[] = {
-	"Hostile",
-	"Unfriendly",
-	"Neutral",
-	"Friendly",
-	"Ally"
-};
-char const **AttitudeStrs = as;
 
 const std::string F_WAR = "War";
 const std::string F_TRADE = "Trade";
@@ -78,8 +71,9 @@ int ParseTemplate(AString *token)
 
 int ParseAttitude(AString *token)
 {
-	for (int i=0; i<NATTITUDES; i++)
-		if (*token == AttitudeStrs[i]) return i;
+	for (auto attitude: AllAttitudes) {
+		if (*token == AttitudeStrs[to_underlying(attitude)]) return to_underlying(attitude);
+	}
 	return -1;
 }
 
@@ -110,26 +104,6 @@ Faction *FactionVector::GetFaction(int x)
 	return vector[x];
 }
 
-Attitude::Attitude()
-{
-}
-
-Attitude::~Attitude()
-{
-}
-
-void Attitude::Writeout(ostream& f)
-{
-	f << factionnum << '\n';
-	f << attitude << '\n';
-}
-
-void Attitude::Readin(istream &f)
-{
-	f >> factionnum;
-	f >> attitude;
-}
-
 Faction::Faction()
 {
 	exists = 1;
@@ -146,7 +120,6 @@ Faction::Faction()
 	showunitattitudes = 0;
 	temformat = TEMPLATE_OFF;
 	quit = 0;
-	defaultattitude = A_NEUTRAL;
 	unclaimed = 0;
 	pReg = NULL;
 	pStartLoc = NULL;
@@ -172,7 +145,6 @@ Faction::Faction(int n)
 	times = 1;
 	showunitattitudes = 0;
 	temformat = TEMPLATE_LONG;
-	defaultattitude = A_NEUTRAL;
 	quit = 0;
 	unclaimed = 0;
 	pReg = NULL;
@@ -187,7 +159,6 @@ Faction::~Faction()
 	if (name) delete name;
 	if (address) delete address;
 	if (password) delete password;
-	attitudes.DeleteAll();
 }
 
 void Faction::Writeout(ostream& f)
@@ -214,9 +185,13 @@ void Faction::Writeout(ostream& f)
 
 	skills.Writeout(f);
 	items.Writeout(f);
-	f << defaultattitude << '\n';
-	f << attitudes.Num() << '\n';
-	forlist((&attitudes)) ((Attitude *) elem)->Writeout(f);
+	f << to_underlying(attitudes.get_default_attitude()) << '\n';
+	auto all_attitudes = attitudes.get_attitudes();
+	f << all_attitudes.size() << '\n';
+	for(auto &attitude : all_attitudes) {
+		f << attitude.first.identifier << '\n';
+		f << to_underlying(attitude.second) << '\n';
+	}
 }
 
 void Faction::Readin(istream& f)
@@ -250,14 +225,17 @@ void Faction::Readin(istream& f)
 	skills.Readin(f);
 	items.Readin(f);
 
+	int defaultattitude;
 	f >> defaultattitude;
+	attitudes.set_default_attitude(from_underlying<Attitude>(defaultattitude));
 	int n;
 	f >> n;
 	for (int i = 0; i < n; i++) {
-		Attitude* a = new Attitude;
-		a->Readin(f);
-		if (a->factionnum == num) delete a;
-		else attitudes.Add(a);
+		int identifier;
+		f >> identifier;
+		int attitude;
+		f >> attitude;
+		attitudes.set_attitude_toward_faction(identifier, from_underlying<Attitude>(attitude));
 	}
 }
 
@@ -600,23 +578,21 @@ void Faction::write_json_report(json& j, Game *game, size_t **citems) {
 
 	/* Attitudes */
 	j["attitudes"] = json::object();
-	string defattitude = AttitudeStrs[defaultattitude];
+	string defattitude = AttitudeStrs[to_underlying(attitudes.get_default_attitude())];
 	transform(defattitude.begin(), defattitude.end(), defattitude.begin(), ::tolower);
 	j["attitudes"]["default"] = defattitude;
-	for (int i=0; i<NATTITUDES; i++) {
-		string attitude = AttitudeStrs[i];
+	for (auto attitude: AllAttitudes) {
+		string attitude_str = AttitudeStrs[to_underlying(attitude)];
 		// how annoying that this is the easiest way to do this.
-		transform(attitude.begin(), attitude.end(), attitude.begin(), ::tolower);
-		j["attitudes"][attitude] = json::array(); // [] = json::array();
-		forlist((&attitudes)) {
-			Attitude* a = (Attitude *) elem;
-			if (a->attitude == i) {
-				// Grab that faction so we can get it's number and name, and strip the " (num)" from the name for json
-				Faction *fac = GetFaction(&(game->factions), a->factionnum);
-				string facname = fac->name->const_str();
-				facname = facname.substr(0, facname.find(" ("));
-				j["attitudes"][attitude].push_back({ { "name", facname }, { "number", a->factionnum } });
-			}
+		transform(attitude_str.begin(), attitude_str.end(), attitude_str.begin(), ::tolower);
+		j["attitudes"][attitude_str] = json::array(); // [] = json::array();
+		auto vec = attitudes.get_attitudes_by_type(attitude);
+		for(auto fac_attitude: vec) {
+			// Grab that faction so we can get it's number and name, and strip the " (num)" from the name for json
+			Faction *fac = GetFaction(&(game->factions), fac_attitude.identifier);
+			string facname = fac->name->const_str();
+			facname = facname.substr(0, facname.find(" ("));
+			j["attitudes"][attitude_str].push_back({ { "name", facname }, { "number", fac_attitude.identifier } });
 		}
 		// the array will be empty if this faction has declared no other factions with that specific attitude.
 	}
@@ -805,19 +781,22 @@ void Faction::write_text_report(ostream& f, Game *pGame, size_t ** citems)
 	}
 
 	/* Attitudes */
-	f << "Declared Attitudes (default " << AttitudeStrs[defaultattitude] << "):\n";
-	for (int i=0; i<NATTITUDES; i++) {
-		int j=0;
-		f << AttitudeStrs[i] << " : ";
-		forlist((&attitudes)) {
-			Attitude* a = (Attitude *) elem;
-			if (a->attitude == i) {
-				if (j) f << ", ";
-				f << GetFaction(&(pGame->factions), a->factionnum)->name->const_str();
-				j = 1;
-			}
+	f << "Declared Attitudes (default " << AttitudeStrs[to_underlying(attitudes.get_default_attitude())] << "):\n";
+	for(auto attitude: AllAttitudes) {
+		string attitude_str = AttitudeStrs[to_underlying(attitude)];
+		f << attitude_str << " : ";
+		auto vec = attitudes.get_attitudes_by_type(attitude);
+		auto count = vec.size();
+		if (!count) {
+			f << "none.\n";
+			continue;
 		}
-		if (!j) f << "none";
+		for(auto fac_attitude: vec) {
+			// Grab that faction so we can get it's number and name, and strip the " (num)" from the name for json
+			Faction *fac = GetFaction(&(pGame->factions), fac_attitude.identifier);
+			f << fac->name->const_str();
+			if(--count) f << ", ";
+		}
 		f << ".\n";
 	}
 	f << '\n';
@@ -907,51 +886,6 @@ void Faction::event(const string& s)
 	events.push_back(s);
 }
 
-void Faction::RemoveAttitude(int f)
-{
-	forlist((&attitudes)) {
-		Attitude *a = (Attitude *) elem;
-		if (a->factionnum == f) {
-			attitudes.Remove(a);
-			delete a;
-			return;
-		}
-	}
-}
-
-int Faction::GetAttitude(int n)
-{
-	if (n == num) return A_ALLY;
-	forlist((&attitudes)) {
-		Attitude *a = (Attitude *) elem;
-		if (a->factionnum == n)
-			return a->attitude;
-	}
-	return defaultattitude;
-}
-
-void Faction::SetAttitude(int num, int att)
-{
-	forlist((&attitudes)) {
-		Attitude *a = (Attitude *) elem;
-		if (a->factionnum == num) {
-			if (att == -1) {
-				attitudes.Remove(a);
-				delete a;
-				return;
-			} else {
-				a->attitude = att;
-				return;
-			}
-		}
-	}
-	if (att != -1) {
-		Attitude *a = new Attitude;
-		a->factionnum = num;
-		a->attitude = att;
-		attitudes.Add(a);
-	}
-}
 
 int Faction::CanCatch(ARegion *r, Unit *t)
 {

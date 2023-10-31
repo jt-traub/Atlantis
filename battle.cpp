@@ -793,7 +793,7 @@ void Game::GetDFacs(ARegion * r,Unit * t,AList & facs)
 				if (u->faction == t->faction ||
 					(AlliesIncluded == 1 && 
 					 u->guard != GUARD_AVOID &&
-					 u->GetAttitude(r,t) == A_ALLY) ) {
+					 u->GetAttitude(r,t) == Attitude::ALLY) ) {
 
 					if (!GetFaction2(&facs,u->faction->num)) {
 						FactionPtr * p = new FactionPtr;
@@ -816,12 +816,12 @@ void Game::GetAFacs(ARegion *r, Unit *att, Unit *tar, AList &dfacs,
 			if (u->canattack && u->IsAlive()) {
 				int add = 0;
 				if ((u->faction == att->faction ||
-							u->GetAttitude(r,tar) == A_HOSTILE) &&
+							u->GetAttitude(r,tar) == Attitude::HOSTILE) &&
 						(u->guard != GUARD_AVOID || u == att)) {
 					add = 1;
 				} else {
 					if (u->guard == GUARD_ADVANCE &&
-							u->GetAttitude(r,tar) != A_ALLY) {
+							u->GetAttitude(r,tar) != Attitude::ALLY) {
 						add = 1;
 					} else {
 						if (u->attackorders) {
@@ -1101,7 +1101,7 @@ int Game::RunBattle(ARegion * r,Unit * attacker,Unit * target,int ass,
 	int result;
 
 	if (ass) {
-		if (attacker->GetAttitude(r,target) == A_ALLY) {
+		if (attacker->GetAttitude(r,target) == Attitude::ALLY) {
 			attacker->Error("ASSASSINATE: Can't assassinate an ally.");
 			return BATTLE_IMPOSSIBLE;
 		}
@@ -1117,7 +1117,7 @@ int Game::RunBattle(ARegion * r,Unit * attacker,Unit * target,int ass,
 			attacker->Error("ATTACK: No battles allowed in safe regions.");
 			return BATTLE_IMPOSSIBLE;
 		}
-		if (attacker->GetAttitude(r,target) == A_ALLY) {
+		if (attacker->GetAttitude(r,target) == Attitude::ALLY) {
 			attacker->Error("ATTACK: Can't attack an ally.");
 			if (adv) {
 				attacker->canattack = 0;

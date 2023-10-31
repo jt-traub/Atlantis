@@ -286,7 +286,7 @@ void Game::Do1Assassinate(ARegion *r, Object *o, Unit *u)
 			succ = 0;
 			break;
 		}
-		if (f->GetAttitude(tar->faction->num) == A_ALLY) {
+		if (f->attitudes.get_attitude_toward_faction(tar->faction->num) == Attitude::ALLY) {
 			succ = 0;
 			break;
 		}
@@ -360,7 +360,7 @@ void Game::Do1Steal(ARegion *r, Object *o, Unit *u)
 			succ = 0;
 			break;
 		}
-		if (f->GetAttitude(tar->faction->num) == A_ALLY) {
+		if (f->attitudes.get_attitude_toward_faction(tar->faction->num) == Attitude::ALLY) {
 			succ = 0;
 			break;
 		}
@@ -1342,7 +1342,7 @@ void Game::DoAutoAttackOn(ARegion *r, Unit *t)
 		forlist(&o->units) {
 			Unit *u = (Unit *) elem;
 			if (u->guard != GUARD_AVOID &&
-					(u->GetAttitude(r, t) == A_HOSTILE) && u->IsAlive() &&
+					(u->GetAttitude(r, t) == Attitude::HOSTILE) && u->IsAlive() &&
 					u->canattack)
 				AttemptAttack(r, u, t, 1);
 			if (!t->IsAlive()) return;
@@ -1365,7 +1365,7 @@ void Game::DoAutoAttack(ARegion *r, Unit *u) {
 		Object *o = (Object *) elem;
 		forlist(&o->units) {
 			Unit *t = (Unit *) elem;
-			if (u->GetAttitude(r, t) == A_HOSTILE) {
+			if (u->GetAttitude(r, t) == Attitude::HOSTILE) {
 				AttemptAttack(r, u, t, 1);
 			}
 			if (u->canattack == 0 || u->IsAlive() == 0)
@@ -1852,7 +1852,7 @@ void Game::CheckAllyMaintenanceItem(int item, int value)
 						forlist((&obj2->units)) {
 							Unit *u2 = (Unit *) elem;
 							if (u->faction != u2->faction &&
-								u2->GetAttitude(r, u) == A_ALLY) {
+								u2->GetAttitude(r, u) == Attitude::ALLY) {
 								int amount = u2->items.GetNum(item);
 								if (amount) {
 									int eat = (u->needed + value - 1) / value;
@@ -1984,7 +1984,7 @@ void Game::CheckAllyHungerItem(int item, int value)
 						forlist((&obj2->units)) {
 							Unit *u2 = (Unit *) elem;
 							if (u->faction != u2->faction &&
-								u2->GetAttitude(r, u) == A_ALLY) {
+								u2->GetAttitude(r, u) == Attitude::ALLY) {
 								int amount = u2->items.GetNum(item);
 								if (amount) {
 									int eat = (u->hunger + value - 1) / value;
@@ -2598,12 +2598,12 @@ int Game::DoGiveOrder(ARegion *r, Unit *u, GiveOrder *o)
 			return 0;
 		}
 		if (!u->CanSee(r, t) &&
-			(t->faction->GetAttitude(u->faction->num) < A_FRIENDLY)) {
+			(t->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY)) {
 				u->Error(ord + ": Nonexistant target (" +
 					o->target->Print() + ").");
 				return 0;
 		}
-		if (t->faction->GetAttitude(u->faction->num) < A_FRIENDLY) {
+		if (t->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY) {
 				u->Error(ord + ": Target is not a member of a friendly faction.");
 				return 0;
 		}
@@ -2851,7 +2851,7 @@ int Game::DoGiveOrder(ARegion *r, Unit *u, GiveOrder *o)
 	}
 	// New RULE -- Must be able to see unit to give something to them!
 	if (!u->CanSee(r, t) &&
-			(t->faction->GetAttitude(u->faction->num) < A_FRIENDLY)) {
+			(t->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY)) {
 		u->Error(ord + ": Nonexistant target (" +
 				o->target->Print() + ").");
 		return 0;
@@ -2880,7 +2880,7 @@ int Game::DoGiveOrder(ARegion *r, Unit *u, GiveOrder *o)
 	}
 
 	if (o->item != I_SILVER &&
-			t->faction->GetAttitude(s->faction->num) < A_FRIENDLY) {
+			t->faction->attitudes.get_attitude_toward_faction(s->faction->num) < Attitude::FRIENDLY) {
 		u->Error("GIVE: Target is not a member of a friendly faction.");
 		return 0;
 	}
@@ -2944,7 +2944,7 @@ int Game::DoGiveOrder(ARegion *r, Unit *u, GiveOrder *o)
 		}
 
 		notallied = 1;
-		if (t->faction->GetAttitude(u->faction->num) == A_ALLY) {
+		if (t->faction->attitudes.get_attitude_toward_faction(u->faction->num) == Attitude::ALLY) {
 			notallied = 0;
 		}
 
@@ -3173,8 +3173,7 @@ void Game::CheckTransportOrders()
 					}
 
 					// Make sure the target and unit are at least friendly
-					if (tar->unit->faction->GetAttitude(u->faction->num) <
-							A_FRIENDLY) {
+					if (tar->unit->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY) {
 						u->Error(ordertype +
 								": Target " + AString(*tar->unit->name) + " is not a member of a friendly "
 								"faction.");

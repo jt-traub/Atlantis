@@ -1389,7 +1389,7 @@ int Game::RunInvisibility(ARegion *r,Unit *u)
 	forlist (&(order->units)) {
 		Unit *tar = r->GetUnitId((UnitId *) elem,u->faction->num);
 		if (!tar) continue;
-		if (tar->GetAttitude(r,u) < A_FRIENDLY) continue;
+		if (tar->GetAttitude(r,u) < Attitude::FRIENDLY) continue;
 		num += tar->GetSoldiers();
 	}
 
@@ -1405,7 +1405,7 @@ int Game::RunInvisibility(ARegion *r,Unit *u)
 	forlist_reuse (&(order->units)) {
 		Unit *tar = r->GetUnitId((UnitId *) elem,u->faction->num);
 		if (!tar) continue;
-		if (tar->GetAttitude(r,u) < A_FRIENDLY) continue;
+		if (tar->GetAttitude(r,u) < Attitude::FRIENDLY) continue;
 		tar->SetFlag(FLAG_INVIS,1);
 		tar->Event(AString("Is rendered invisible by ") +
 				*(u->name) + ".");
@@ -1847,7 +1847,7 @@ int Game::RunGateJump(ARegion *r,Object *o,Unit *u)
 					continue;
 				}
 
-				if (loc->unit->GetAttitude(r,u) < A_ALLY) {
+				if (loc->unit->GetAttitude(r,u) < Attitude::ALLY) {
 					u->Error("CAST: Unit is not allied.");
 				} else {
 					if (comma) {
@@ -1914,7 +1914,7 @@ int Game::RunPortalLore(ARegion *r,Object *o,Unit *u)
 		return 0;
 	}
 
-	if (tar->unit->faction->GetAttitude(u->faction->num) < A_FRIENDLY) {
+	if (tar->unit->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY) {
 		u->Error("CAST: Target mage is not friendly.");
 		return 0;
 	}
@@ -1937,7 +1937,7 @@ int Game::RunPortalLore(ARegion *r,Object *o,Unit *u)
 		forlist(&(order->units)) {
 			Location *loc = r->GetLocation((UnitId *) elem,u->faction->num);
 			if (loc) {
-				if (loc->unit->GetAttitude(r,u) < A_ALLY) {
+				if (loc->unit->GetAttitude(r,u) < Attitude::ALLY) {
 					u->Error("CAST: Unit is not allied.");
 				} else {
 					loc->unit->DiscardUnfinishedShips();

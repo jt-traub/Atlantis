@@ -33,6 +33,7 @@
 class Faction;
 class Game;
 
+#include "attitude.hpp"
 #include "gameio.h"
 #include "aregion.h"
 #include "unit.h"
@@ -52,15 +53,6 @@ using json = nlohmann::json;
 #include <sstream>
 
 using namespace std;
-
-enum {
-	A_HOSTILE,
-	A_UNFRIENDLY,
-	A_NEUTRAL,
-	A_FRIENDLY,
-	A_ALLY,
-	NATTITUDES
-};
 
 extern const std::string F_WAR;
 extern const std::string F_TRADE;
@@ -86,7 +78,7 @@ enum {
 	QUIT_GAME_OVER,
 };
 
-extern char const ** AttitudeStrs;
+
 extern std::vector<std::string> *FactionTypes;
 
 // LLS - include strings for the template enum
@@ -109,17 +101,8 @@ public:
 	Faction **vector;
 	int vectorsize;
 };
-	
-class Attitude : public AListElem {
-public:
-	Attitude();
-	~Attitude();
-	void Writeout(ostream& f);
-	void Readin(istream& f);
-	
-	int factionnum;
-	int attitude;
-};
+
+
 
 enum FactionActivity {
 	TAX     = 1,
@@ -179,11 +162,6 @@ public:
 	void WriteTemplate(ostream& f, Game *pGame);
 	void WriteFacInfo(ostream& f);
 	
-	void SetAttitude(int,int); /* faction num, attitude */
-	/* if attitude == -1, clear it */
-	int GetAttitude(int);
-	void RemoveAttitude(int);
-	
 	int CanCatch(ARegion *,Unit *);
 	/* Return 1 if can see, 2 if can see faction */
 	int CanSee(ARegion *,Unit *, int practice = 0);
@@ -235,10 +213,8 @@ public:
 
 	/* Used when writing reports */
 	AList present_regions;
-	
-	int defaultattitude;
-	// TODO: Convert this to a hashmap of <attitude, vector<factionid>>
-	AList attitudes;
+
+	FactionAttitudes attitudes;	
 	SkillList skills;
 	ItemList items;
 	

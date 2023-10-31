@@ -39,6 +39,7 @@
 class Unit;
 class UnitId;
 
+#include "attitude.hpp"
 #include "faction.h"
 #include "alist.h"
 #include "gameio.h"
@@ -130,7 +131,7 @@ class Unit : public AListElem
 
 		AString SpoilsReport(void);
 		int CanGetSpoil(Item *i);
-		void WriteReport(ostream& f,int,int,int,int, int, int);
+		void WriteReport(ostream& f, int obs, int truesight, int detfac, int autosee, Attitude attitude, int showattitudes);
 		AString GetName(int);
 		AString MageReport();
 		AString ReadyItem();
@@ -194,8 +195,7 @@ class Unit : public AListElem
 		int CanSee(ARegion *,Unit *, int practice = 0);
 		int CanCatch(ARegion *,Unit *);
 		int AmtsPreventCrime(Unit *);
-		int GetAttitude(ARegion *,Unit *); /* Get this unit's attitude toward
-											  the Unit parameter */
+		Attitude GetAttitude(ARegion *,Unit *); /* Get this unit's attitude toward the Unit parameter */
 		int Hostile();
 		int Forbids(ARegion *,Unit *);
 		int Weight();

@@ -1935,7 +1935,7 @@ void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
 	if (!token) {
 		if (fac != -1) {
 			if (!pCheck) {
-				f->SetAttitude(fac, -1);
+				f->attitudes.clear_attitude_toward_faction(fac);
 			}
 		}
 		return;
@@ -1950,9 +1950,9 @@ void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
 
 	if (!pCheck) {
 		if (fac == -1) {
-			f->defaultattitude = att;
+			f->attitudes.set_default_attitude(from_underlying<Attitude>(att));
 		} else {
-			f->SetAttitude(fac, att);
+			f->attitudes.set_attitude_toward_faction(fac, from_underlying<Attitude>(att));
 		}
 	}
 }

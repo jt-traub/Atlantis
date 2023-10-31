@@ -1264,7 +1264,7 @@ void Game::DeleteDeadFactions()
 		if (!fac->is_npc && !fac->exists) {
 			factions.Remove(fac);
 			forlist((&factions))
-				((Faction *) elem)->RemoveAttitude(fac->num);
+				((Faction *) elem)->attitudes.clear_attitude_toward_faction(fac->num);
 			delete fac;
 		}
 	}

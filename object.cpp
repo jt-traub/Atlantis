@@ -267,7 +267,7 @@ Unit *Object::ForbiddenBy(ARegion *reg, Unit *u)
 		return(0);
 	}
 
-	if (owner->GetAttitude(reg, u) < A_FRIENDLY) {
+	if (owner->GetAttitude(reg, u) < Attitude::FRIENDLY) {
 		return owner;
 	}
 	return 0;
@@ -380,7 +380,7 @@ void Object::Report(ostream& f, Faction *fac, int obs, int truesight,
 
 	forlist ((&units)) {
 		Unit *u = (Unit *) elem;
-		int attitude = fac->GetAttitude(u->faction->num);
+		Attitude attitude = fac->attitudes.get_attitude_toward_faction(u->faction->num);
 		if (u->faction == fac) {
 			u->WriteReport(f, -1, 1, 1, 1, attitude, fac->showunitattitudes);
 		} else {

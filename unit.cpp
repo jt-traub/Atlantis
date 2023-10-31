@@ -23,6 +23,7 @@
 //
 // END A3HEADER
 
+#include "attitude.hpp"
 #include "unit.h"
 #include "gamedata.h"
 
@@ -425,8 +426,7 @@ AString Unit::SpoilsReport() {
 	return temp;
 }
 
-void Unit::WriteReport(ostream& f, int obs, int truesight, int detfac,
-				int autosee, int attitude, int showattitudes)
+void Unit::WriteReport(ostream& f, int obs, int truesight, int detfac, int autosee, Attitude attitude, int showattitudes)
 {
 	int stealth = GetAttribute("stealth");
 	if (obs==-1) {
@@ -479,20 +479,24 @@ void Unit::WriteReport(ostream& f, int obs, int truesight, int detfac,
 	} else {
 		if (showattitudes) {
 			switch (attitude) {
-			case A_ALLY: 
+			case Attitude::ALLY:
 				temp += AString("= ") +*name;
 				break;
-			case A_FRIENDLY: 
+			case Attitude::FRIENDLY:
 				temp += AString(": ") +*name;
 				break;
-			case A_NEUTRAL: 
+			case Attitude::NEUTRAL:
 				temp += AString("- ") +*name;
 				break;
-			case A_UNFRIENDLY: 
+			case Attitude::UNFRIENDLY:
 				temp += AString("% ") +*name;
 				break;
-			case A_HOSTILE: 
+			case Attitude::HOSTILE:
 				temp += AString("! ") +*name;
+				break;
+			case Attitude::NUM_ATTITUDES:
+				// This should not *ever* be possible.  If it happens, just print it as 'neutral'.
+				temp += AString("- ") +*name;
 				break;
 			}
 		} else {
@@ -1941,16 +1945,16 @@ int Unit::AmtsPreventCrime(Unit *u)
 	return 0;
 }
 
-int Unit::GetAttitude(ARegion *r, Unit *u)
+Attitude Unit::GetAttitude(ARegion *r, Unit *u)
 {
-	if (faction == u->faction) return A_ALLY;
-	int att = faction->GetAttitude(u->faction->num);
-	if (att >= A_FRIENDLY && att >= faction->defaultattitude) return att;
+	if (faction == u->faction) return Attitude::ALLY;
+	Attitude att = faction->attitudes.get_attitude_toward_faction(u->faction->num);
+	if (att >= Attitude::FRIENDLY && att >= faction->attitudes.get_default_attitude()) return att;
 
 	if (CanSee(r, u) == 2)
 		return att;
 	else
-		return faction->defaultattitude;
+		return faction->attitudes.get_default_attitude();
 }
 
 int Unit::Hostile()
@@ -1975,7 +1979,7 @@ int Unit::Forbids(ARegion *r, Unit *u)
 	if (!IsAlive()) return 0;
 	if (!CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) return 0;
 	if (!CanCatch(r, u)) return 0;
-	if (GetAttitude(r, u) < A_NEUTRAL) return 1;
+	if (GetAttitude(r, u) < Attitude::NEUTRAL) return 1;
 	return 0;
 }
 

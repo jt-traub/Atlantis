@@ -440,7 +440,7 @@ void Game::Do1TeachOrder(ARegion * reg,Unit * unit)
 			unit->Error("TEACH: No such unit.");
 			delete id;
 		} else {
-			if (target->faction->GetAttitude(unit->faction->num) < A_FRIENDLY) {
+			if (target->faction->attitudes.get_attitude_toward_faction(unit->faction->num) < Attitude::FRIENDLY) {
 				unit->Error(AString("TEACH: ") + *(target->name) +
 							" is not a member of a friendly faction.");
 				order->targets.Remove(id);
@@ -785,8 +785,7 @@ void Game::RunBuildHelpers(ARegion *r)
 							continue;
 						}
 						// Make sure that unit considers you friendly!
-						if (target->faction->GetAttitude(u->faction->num) <
-								A_FRIENDLY) {
+						if (target->faction->attitudes.get_attitude_toward_faction(u->faction->num) < Attitude::FRIENDLY) {
 							u->Error("BUILD: Unit you are helping rejects "
 									"your help.");
 							delete u->monthorders;
